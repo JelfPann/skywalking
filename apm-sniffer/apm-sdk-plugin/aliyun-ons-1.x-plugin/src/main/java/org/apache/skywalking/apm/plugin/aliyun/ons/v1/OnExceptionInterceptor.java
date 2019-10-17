@@ -34,6 +34,8 @@ import java.lang.reflect.Method;
  * {@link OnExceptionInterceptor} create local span when the method {@link org.apache.rocketmq.client.producer.SendCallback#onException(Throwable)}
  * execute.
  *
+ * // TODO 芋艿，需要在做一些增强
+ *
  * @author zhang xin
  */
 public class OnExceptionInterceptor implements InstanceMethodsAroundInterceptor {

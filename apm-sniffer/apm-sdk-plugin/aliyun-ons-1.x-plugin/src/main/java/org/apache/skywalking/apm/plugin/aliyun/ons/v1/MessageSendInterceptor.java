@@ -19,9 +19,12 @@
 
 package org.apache.skywalking.apm.plugin.aliyun.ons.v1;
 
+import com.alibaba.ons.open.trace.core.common.OnsTraceConstants;
+import com.aliyun.openservices.shade.com.alibaba.rocketmq.client.hook.SendMessageContext;
 import com.aliyun.openservices.shade.com.alibaba.rocketmq.client.impl.CommunicationMode;
 import com.aliyun.openservices.shade.com.alibaba.rocketmq.client.producer.SendResult;
 import com.aliyun.openservices.shade.com.alibaba.rocketmq.common.message.Message;
+import com.aliyun.openservices.shade.com.alibaba.rocketmq.common.message.MessageClientIDSetter;
 import com.aliyun.openservices.shade.com.alibaba.rocketmq.common.protocol.header.SendMessageRequestHeader;
 import org.apache.skywalking.apm.agent.core.context.CarrierItem;
 import org.apache.skywalking.apm.agent.core.context.ContextCarrier;
@@ -33,7 +36,9 @@ import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.EnhancedI
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.InstanceMethodsAroundInterceptor;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.MethodInterceptResult;
 import org.apache.skywalking.apm.network.trace.component.ComponentsDefine;
+import org.apache.skywalking.apm.plugin.aliyun.ons.v1.context.MQTags;
 import org.apache.skywalking.apm.plugin.aliyun.ons.v1.context.SendCallBackEnhanceInfo;
+import org.apache.skywalking.apm.util.MachineInfo;
 import org.apache.skywalking.apm.util.StringUtil;
 
 import java.lang.reflect.Method;
@@ -58,18 +63,32 @@ public class MessageSendInterceptor implements InstanceMethodsAroundInterceptor 
     @Override
     public void beforeMethod(EnhancedInstance objInst, Method method, Object[] allArguments, Class<?>[] argumentsTypes,
         MethodInterceptResult result) throws Throwable {
+        // 判断是否为忽略的 Topic
         Message message = (Message)allArguments[2];
+        if (this.ignoreTopic(message)) {
+            return;
+        }
+        // 获得发送上下文
+        SendMessageContext sendMessageContext = (SendMessageContext) allArguments[10];
+        // 创建 ContextCarrier 对象
         ContextCarrier contextCarrier = new ContextCarrier();
         String namingServiceAddress = String.valueOf(objInst.getSkyWalkingDynamicField());
         AbstractSpan span = ContextManager.createExitSpan(buildOperationName(message.getTopic()), contextCarrier, namingServiceAddress);
         span.setComponent(ComponentsDefine.ROCKET_MQ_PRODUCER);
         Tags.MQ_BROKER.set(span, (String)allArguments[0]);
         Tags.MQ_TOPIC.set(span, message.getTopic());
-        // TODO 芋艿 client messageId
-        // TODO 芋艿 发送类型
-        // TODO 芋艿 queueId
-        // TODO 芋艿 消息内容
+        MQTags.MQ_GROUP.set(span, sendMessageContext.getProducerGroup());
+        Tags.MQ_QUEUE.set(span, String.valueOf(sendMessageContext.getMq().getQueueId()));
+        MQTags.MQ_TAG.set(span, message.getTags());
+        MQTags.MQ_UNIQ_KEY.set(span, MessageClientIDSetter.getUniqID(message));
+        if (true) { // TODO 芋艿，后面做个开关。
+            MQTags.MQ_BODY.set(span, new String(message.getBody()));
+        }
+
+        // TODO 芋艿 发送类型 SYNC ASYNC ONEWAY 。
+        // TODO 芋艿 消息类型，是事务消息、普通消息 。
         SpanLayer.asMQ(span);
+        MQTags.MQ_HOST.set(span, MachineInfo.getHostDesc());
 
         SendMessageRequestHeader requestHeader = (SendMessageRequestHeader)allArguments[3];
         StringBuilder properties = new StringBuilder(requestHeader.getProperties());
@@ -94,6 +113,11 @@ public class MessageSendInterceptor implements InstanceMethodsAroundInterceptor 
     @Override
     public Object afterMethod(EnhancedInstance objInst, Method method, Object[] allArguments, Class<?>[] argumentsTypes,
         Object ret) throws Throwable {
+        // 判断是否为忽略的 Topic
+        Message message = (Message)allArguments[2];
+        if (this.ignoreTopic(message)) {
+            return ret;
+        }
         CommunicationMode communicationMode = (CommunicationMode) allArguments[5];
         // 同步的情况下，设置发送状态
         if (CommunicationMode.SYNC.equals(communicationMode)) {
@@ -102,7 +126,9 @@ public class MessageSendInterceptor implements InstanceMethodsAroundInterceptor 
             // 获得当前 Span
             AbstractSpan span = ContextManager.activeSpan();
             Tags.STATUS_CODE.set(span, result.getSendStatus().name());
-            // TODO server messageId
+            if (result.getMsgId() != null) {
+                MQTags.MQ_MESSAGE_ID.set(span, result.getOffsetMsgId());
+            }
         }
         ContextManager.stopSpan();
         return ret;
@@ -116,6 +142,19 @@ public class MessageSendInterceptor implements InstanceMethodsAroundInterceptor 
 
     private String buildOperationName(String topicName) {
         return ASYNC_SEND_OPERATION_NAME_PREFIX + topicName + "/Producer";
+    }
+
+    /**
+     * 是否忽略为不进行追踪的 RocketMQ Topic
+     *
+     * 目前不追踪的 Topic 有如下几个：
+     * 1. 以为 {@link OnsTraceConstants#traceTopic} 开头的 Topic ，它是用于阿里云 Ons 的采集。
+     *
+     * @param message 消息
+     * @return 是否忽略
+     */
+    private boolean ignoreTopic(Message message) {
+        return message.getTopic().startsWith(OnsTraceConstants.traceTopic);
     }
 
 }
