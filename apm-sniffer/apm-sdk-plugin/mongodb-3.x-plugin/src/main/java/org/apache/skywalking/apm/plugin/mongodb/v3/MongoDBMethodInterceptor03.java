@@ -21,7 +21,7 @@ package org.apache.skywalking.apm.plugin.mongodb.v3;
 
 import com.mongodb.MongoNamespace;
 import com.mongodb.ReadPreference;
-import com.mongodb.internal.connection.InternalConnection;
+import com.mongodb.connection.ConnectionDescription;
 import com.mongodb.operation.ReadOperation;
 import com.mongodb.operation.WriteOperation;
 import org.apache.skywalking.apm.agent.core.conf.Config;
@@ -56,10 +56,11 @@ public class MongoDBMethodInterceptor03 implements InstanceMethodsAroundIntercep
 
         String database = this.obtainDatabase(objInst);
         String command = this.obtainCommand(objInst);
-        InternalConnection connection = (InternalConnection) allArguments[0];
-        String remotePeer = connection.getDescription().getServerAddress().toString();
+//        InternalConnection connection = (InternalConnection) allArguments[0];
+//        String remotePeer = connection.getDescription().getServerAddress().toString();
+        String remotePeer = this.obtainRemotePeer(allArguments[0]);
 
-        // TODO url 的拼接，后面找下方案。实在不行，使用 collection name
+                // TODO url 的拼接，后面找下方案。实在不行，使用 collection name
         AbstractSpan span = ContextManager.createExitSpan(MONGO_DB_OP_PREFIX , new ContextCarrier(), remotePeer);
         span.setComponent(ComponentsDefine.MONGO_DRIVER);
         Tags.DB_INSTANCE.set(span, database);
@@ -84,6 +85,18 @@ public class MongoDBMethodInterceptor03 implements InstanceMethodsAroundIntercep
         AbstractSpan activeSpan = ContextManager.activeSpan();
         activeSpan.errorOccurred();
         activeSpan.log(t);
+    }
+
+    private String obtainRemotePeer(Object connection) {
+        try {
+            Method method = connection.getClass().getDeclaredMethod("getDescription");
+            method.setAccessible(true);
+            ConnectionDescription description = (ConnectionDescription) method.invoke(connection);
+            return description.getServerAddress().toString();
+        } catch (Throwable e) {
+            // TODO 需要打印一场
+            return "UNKNOWN";
+        }
     }
 
     private String obtainCommand(EnhancedInstance objInst) {

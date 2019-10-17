@@ -29,9 +29,9 @@ import org.apache.skywalking.apm.agent.core.plugin.match.NameMatch;
 
 import static net.bytebuddy.matcher.ElementMatchers.named;
 
-public class MongoDBInstrumentation03 extends ClassInstanceMethodsEnhancePluginDefine {
+public class MongoDBInstrumentation36 extends ClassInstanceMethodsEnhancePluginDefine {
 
-    private static final String ENHANCE_CLASS = "com.mongodb.internal.connection.CommandProtocolImpl";
+    private static final String ENHANCE_CLASS = "com.mongodb.connection.CommandProtocolImpl";
 
     private static final String MONGDB_METHOD_INTERCET_CLASS = "org.apache.skywalking.apm.plugin.mongodb.v3.MongoDBMethodInterceptor03";
 

@@ -14,4 +14,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-mongodb-3.x=org.apache.skywalking.apm.plugin.mongodb.v3.define.MongoDBInstrumentation03
+mongodb-3.x=org.apache.skywalking.apm.plugin.mongodb.v3.define.MongoDBInstrumentation36
+mongodb-3.x=org.apache.skywalking.apm.plugin.mongodb.v3.define.MongoDBInstrumentation38

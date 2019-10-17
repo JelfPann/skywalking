@@ -33,6 +33,8 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <mongo-java-driver.version>3.8.2</mongo-java-driver.version>
+<!--         TODO 该插件目前只支持 3.6.X 版本，因为 InternalConnection 包改了路径，-->
+<!--        <mongo-java-driver.version>3.6.3</mongo-java-driver.version>-->
     </properties>
 
     <dependencies>
