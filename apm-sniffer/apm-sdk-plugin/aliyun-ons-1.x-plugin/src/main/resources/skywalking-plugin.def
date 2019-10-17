@@ -14,4 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-mongodb-3.x=org.apache.skywalking.apm.plugin.mongodb.v3.define.MongoDBInstrumentation03
+aliyun-ons=org.apache.skywalking.apm.plugin.aliyun.ons.v1.define.MQClientAPIImplInstrumentation
+aliyun-ons=org.apache.skywalking.apm.plugin.aliyun.ons.v1.define.SendCallbackInstrumentation
+aliyun-ons=org.apache.skywalking.apm.plugin.aliyun.ons.v1.define.ConsumeMessageConcurrentlyInstrumentation
+aliyun-ons=org.apache.skywalking.apm.plugin.aliyun.ons.v1.define.ConsumeMessageOrderlyInstrumentation

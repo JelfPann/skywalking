@@ -21,38 +21,19 @@ package org.apache.skywalking.apm.plugin.mongodb.v3.define;
 
 import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.matcher.ElementMatcher;
+import org.apache.skywalking.apm.agent.core.plugin.interceptor.ConstructorInterceptPoint;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.InstanceMethodsInterceptPoint;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.ClassInstanceMethodsEnhancePluginDefine;
 import org.apache.skywalking.apm.agent.core.plugin.match.ClassMatch;
 import org.apache.skywalking.apm.agent.core.plugin.match.NameMatch;
-import org.apache.skywalking.apm.agent.core.plugin.interceptor.ConstructorInterceptPoint;
 
 import static net.bytebuddy.matcher.ElementMatchers.named;
-import static org.apache.skywalking.apm.agent.core.plugin.bytebuddy.ArgumentTypeNameMatch.takesArgumentWithType;
 
-@Deprecated
-public class MongoDBInstrumentation extends ClassInstanceMethodsEnhancePluginDefine {
+public class MongoDBInstrumentation03 extends ClassInstanceMethodsEnhancePluginDefine {
 
-    private static final String ENHANCE_CLASS = "com.mongodb.Mongo";
+    private static final String ENHANCE_CLASS = "com.mongodb.internal.connection.CommandProtocolImpl";
 
-    private static final String MONGDB_METHOD_INTERCET_CLASS = "org.apache.skywalking.apm.plugin.mongodb.v3.MongoDBMethodInterceptor";
-
-    @Override
-    public ConstructorInterceptPoint[] getConstructorsInterceptPoints() {
-        return new ConstructorInterceptPoint[] {
-            new ConstructorInterceptPoint() {
-                @Override
-                public ElementMatcher<MethodDescription> getConstructorMatcher() {
-                    return takesArgumentWithType(0, "com.mongodb.connection.Cluster");
-                }
-
-                @Override
-                public String getConstructorInterceptor() {
-                    return MONGDB_METHOD_INTERCET_CLASS;
-                }
-            }
-        };
-    }
+    private static final String MONGDB_METHOD_INTERCET_CLASS = "org.apache.skywalking.apm.plugin.mongodb.v3.MongoDBMethodInterceptor03";
 
     @Override
     public InstanceMethodsInterceptPoint[] getInstanceMethodsInterceptPoints() {
@@ -79,6 +60,11 @@ public class MongoDBInstrumentation extends ClassInstanceMethodsEnhancePluginDef
     @Override
     protected ClassMatch enhanceClass() {
         return NameMatch.byName(ENHANCE_CLASS);
+    }
+
+    @Override
+    public ConstructorInterceptPoint[] getConstructorsInterceptPoints() {
+        return null;
     }
 
 }

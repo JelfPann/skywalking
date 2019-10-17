@@ -78,6 +78,7 @@
         <module>light4j-plugins</module>
         <module>ehcache-2.x-plugin</module>
         <module>pulsar-plugin</module>
+        <module>aliyun-ons-1.x-plugin</module>
     </modules>
     <packaging>pom</packaging>
 
